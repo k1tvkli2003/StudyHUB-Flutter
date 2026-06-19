@@ -1,0 +1,107 @@
+name: Flutter Multi-Platform Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  release:
+    types: [created]
+
+permissions:
+  contents: write
+
+jobs:
+  analyze_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: flutter analyze
+      - run: flutter test
+
+  android:
+    needs: analyze_test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - name: Build APK and appbundle
+        env:
+          AVALAI_API_KEY: ${{ secrets.AVALAI_API_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SYNC_PASSWORD: ${{ secrets.SUPABASE_SYNC_PASSWORD }}
+        run: |
+          flutter build apk --release --dart-define=AVALAI_API_KEY="$AVALAI_API_KEY" --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" --dart-define=SUPABASE_SYNC_PASSWORD="$SUPABASE_SYNC_PASSWORD"
+          flutter build appbundle --release --dart-define=AVALAI_API_KEY="$AVALAI_API_KEY" --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" --dart-define=SUPABASE_SYNC_PASSWORD="$SUPABASE_SYNC_PASSWORD"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StudyHUB-Android
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/bundle/release/*.aab
+
+  ios_macos:
+    needs: analyze_test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: flutter build ios --release --no-codesign
+      - run: flutter build macos --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StudyHUB-Apple
+          path: |
+            build/ios/iphoneos/*.app
+            build/macos/Build/Products/Release/*.app
+
+  windows:
+    needs: analyze_test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: flutter build windows --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StudyHUB-Windows
+          path: build/windows/x64/runner/Release/**
+
+  linux:
+    needs: analyze_test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install Linux desktop deps
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: flutter build linux --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StudyHUB-Linux
+          path: build/linux/x64/release/bundle/**

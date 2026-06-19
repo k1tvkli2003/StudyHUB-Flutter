@@ -1,0 +1,103 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../data/repositories/content_repository.dart';
+import '../../data/repositories/pdf_repository.dart';
+import '../../design_system/studyhub_components.dart';
+import '../shared/screen_frame.dart';
+
+final _libraryPdfsProvider = StreamProvider((ref) => ref.watch(pdfRepositoryProvider).watchPdfs());
+final _libraryCoursesProvider = StreamProvider((ref) => ref.watch(contentRepositoryProvider).watchReadyCourses());
+
+class LibraryScreen extends ConsumerStatefulWidget {
+  const LibraryScreen({super.key});
+
+  @override
+  ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
+}
+
+class _LibraryScreenState extends ConsumerState<LibraryScreen> {
+  int _segment = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final pdfs = ref.watch(_libraryPdfsProvider).value ?? const [];
+    final courses = ref.watch(_libraryCoursesProvider).value ?? const [];
+    final repo = ref.read(contentRepositoryProvider);
+    return ScreenFrame(
+      children: [
+        PremiumHeader(
+          title: 'Library',
+          subtitle: 'PDFs, courses, forks, and offline study state',
+          trailing: IconButton.filledTonal(
+            onPressed: () => ref.read(contentRepositoryProvider).refreshCourses(),
+            icon: const Icon(Icons.sync_rounded),
+            tooltip: 'Refresh courses',
+          ),
+        ),
+        SegmentedButton<int>(
+          segments: const [
+            ButtonSegment(value: 0, icon: Icon(Icons.travel_explore_rounded), label: Text('Courses')),
+            ButtonSegment(value: 1, icon: Icon(Icons.picture_as_pdf_rounded), label: Text('My PDFs')),
+          ],
+          selected: {_segment},
+          onSelectionChanged: (value) => setState(() => _segment = value.first),
+        ),
+        if (_segment == 0)
+          ...courses.map(
+            (course) => StudyCard(
+              onTap: () async {
+                final detail = await repo.getCourseDetail(course.id);
+                final chapter = detail?.chapters.where((c) => c.hasContent).firstOrNull;
+                if (chapter != null && context.mounted) {
+                  context.go('/lesson/${chapter.id}?courseId=${course.id}&mode=FIND');
+                }
+              },
+              accent: Theme.of(context).colorScheme.primary,
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(child: Text(course.title.characters.firstOrNull ?? 'S')),
+                title: Text(course.title, style: Theme.of(context).textTheme.titleMedium),
+                subtitle: Text('${course.titleEn}\n${course.chapterCount} chapters · ${course.lessonCount} lessons'),
+                isThreeLine: true,
+                trailing: const Icon(Icons.arrow_forward_rounded),
+              ),
+            ),
+          )
+        else
+          ...pdfs.map(
+            (pdf) => StudyCard(
+              onTap: () => context.go('/pdf/${pdf.id}'),
+              accent: Theme.of(context).colorScheme.secondary,
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.picture_as_pdf_rounded),
+                title: Text(pdf.title),
+                subtitle: Text('${pdf.pageCount ?? 0} pages · ${pdf.processingStatus}'),
+                trailing: const Icon(Icons.arrow_forward_rounded),
+              ),
+            ),
+          ),
+        if ((_segment == 0 && courses.isEmpty) || (_segment == 1 && pdfs.isEmpty))
+          StudyCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_segment == 0 ? 'No cached courses yet' : 'No PDFs yet', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                Text(
+                  _segment == 0 ? 'Use refresh to pull the Supabase course catalog.' : 'PDF import is wired to the legacy database layer; add picker UI in the next pass.',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+extension _FirstOrNull<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
+}
