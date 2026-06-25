@@ -1,0 +1,296 @@
+workflows:
+  analyze-test:
+    name: Analyze and Test
+    instance_type: linux_x2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+        - ~/.gradle/caches
+    triggering:
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    scripts:
+      - name: Install dependencies
+        script: flutter pub get
+      - name: Generate code
+        script: dart run build_runner build --delete-conflicting-outputs
+      - name: Analyze
+        script: flutter analyze
+      - name: Test
+        script: flutter test
+
+  android-release:
+    name: Android Release
+    instance_type: linux_x2
+    max_build_duration: 90
+    environment:
+      groups:
+        - studyhub_app_secrets
+        - studyhub_android_signing
+        - studyhub_github_release
+      flutter: stable
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+        - ~/.gradle/caches
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: v*
+          include: true
+    scripts:
+      - name: Install dependencies
+        script: flutter pub get
+      - name: Generate code
+        script: dart run build_runner build --delete-conflicting-outputs
+      - name: Prepare Android signing
+        script: |
+          if [ -n "${ANDROID_KEYSTORE_BASE64:-}" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$CM_BUILD_DIR/studyhub-release.jks"
+            echo "ANDROID_KEYSTORE_PATH=$CM_BUILD_DIR/studyhub-release.jks" >> "$CM_ENV"
+          fi
+      - name: Build Android APK and app bundle
+        script: |
+          flutter build apk --release \
+            --dart-define=AVALAI_API_KEY="${AVALAI_API_KEY:-}" \
+            --dart-define=AVALAI_BASE_URL="${AVALAI_BASE_URL:-https://api.avalai.ir}" \
+            --dart-define=AI_MODEL="${AI_MODEL:-gemini-3.1-flash-lite}" \
+            --dart-define=SUPABASE_URL="${SUPABASE_URL:-https://evyjrbwibwrdkjakooor.supabase.co}" \
+            --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}" \
+            --dart-define=SUPABASE_SYNC_EMAIL="${SUPABASE_SYNC_EMAIL:-owner@studyhub.app}" \
+            --dart-define=SUPABASE_SYNC_PASSWORD="${SUPABASE_SYNC_PASSWORD:-}"
+          flutter build appbundle --release \
+            --dart-define=AVALAI_API_KEY="${AVALAI_API_KEY:-}" \
+            --dart-define=AVALAI_BASE_URL="${AVALAI_BASE_URL:-https://api.avalai.ir}" \
+            --dart-define=AI_MODEL="${AI_MODEL:-gemini-3.1-flash-lite}" \
+            --dart-define=SUPABASE_URL="${SUPABASE_URL:-https://evyjrbwibwrdkjakooor.supabase.co}" \
+            --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}" \
+            --dart-define=SUPABASE_SYNC_EMAIL="${SUPABASE_SYNC_EMAIL:-owner@studyhub.app}" \
+            --dart-define=SUPABASE_SYNC_PASSWORD="${SUPABASE_SYNC_PASSWORD:-}"
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/bundle/release/*.aab
+    publishing:
+      scripts:
+        - name: Publish Android assets to GitHub Release
+          script: dart run tool/github_release.dart build/app/outputs/flutter-apk/*.apk build/app/outputs/bundle/release/*.aab
+
+  apple-release:
+    name: iOS and macOS Release
+    instance_type: mac_mini_m2
+    max_build_duration: 120
+    environment:
+      groups:
+        - studyhub_app_secrets
+        - studyhub_github_release
+      flutter: stable
+      xcode: latest
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: v*
+          include: true
+    scripts:
+      - name: Install dependencies
+        script: flutter pub get
+      - name: Generate code
+        script: dart run build_runner build --delete-conflicting-outputs
+      - name: Build iOS and macOS
+        script: |
+          flutter build ios --release --no-codesign
+          flutter build macos --release
+      - name: Package Apple artifacts
+        script: |
+          mkdir -p build/release-artifacts
+          tar -czf build/release-artifacts/StudyHUB-iOS-app.tar.gz -C build/ios/iphoneos Runner.app
+          tar -czf build/release-artifacts/StudyHUB-macOS-app.tar.gz -C build/macos/Build/Products/Release studyhub.app
+    artifacts:
+      - build/release-artifacts/*.tar.gz
+    publishing:
+      scripts:
+        - name: Publish Apple assets to GitHub Release
+          script: dart run tool/github_release.dart build/release-artifacts/*.tar.gz
+
+  windows-release:
+    name: Windows Release
+    instance_type: windows_x2
+    max_build_duration: 90
+    environment:
+      groups:
+        - studyhub_app_secrets
+        - studyhub_github_release
+      flutter: stable
+    cache:
+      cache_paths:
+        - $HOME\AppData\Local\Pub\Cache
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: v*
+          include: true
+    scripts:
+      - name: Install dependencies
+        script: flutter pub get
+      - name: Generate code
+        script: dart run build_runner build --delete-conflicting-outputs
+      - name: Build Windows
+        script: flutter build windows --release
+      - name: Package Windows artifact
+        script: |
+          New-Item -ItemType Directory -Force -Path build\release-artifacts
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath build\release-artifacts\StudyHUB-Windows.zip -Force
+    artifacts:
+      - build/release-artifacts/*.zip
+    publishing:
+      scripts:
+        - name: Publish Windows asset to GitHub Release
+          script: dart run tool/github_release.dart build/release-artifacts/StudyHUB-Windows.zip
+
+  linux-release:
+    name: Linux Release
+    instance_type: linux_x2
+    max_build_duration: 90
+    environment:
+      groups:
+        - studyhub_app_secrets
+        - studyhub_github_release
+      flutter: stable
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: v*
+          include: true
+    scripts:
+      - name: Install Linux desktop dependencies
+        script: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+      - name: Install dependencies
+        script: flutter pub get
+      - name: Generate code
+        script: dart run build_runner build --delete-conflicting-outputs
+      - name: Build Linux
+        script: flutter build linux --release
+      - name: Package Linux artifact
+        script: |
+          mkdir -p build/release-artifacts
+          tar -czf build/release-artifacts/StudyHUB-Linux.tar.gz -C build/linux/x64/release/bundle .
+    artifacts:
+      - build/release-artifacts/*.tar.gz
+    publishing:
+      scripts:
+        - name: Publish Linux asset to GitHub Release
+          script: dart run tool/github_release.dart build/release-artifacts/*.tar.gz
+
+  web-release:
+    name: Web Release and Vercel Deploy
+    instance_type: linux_x2
+    max_build_duration: 90
+    environment:
+      groups:
+        - studyhub_app_secrets
+        - studyhub_github_release
+        - studyhub_vercel
+      flutter: stable
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: v*
+          include: true
+    scripts:
+      - name: Enable Flutter web
+        script: flutter config --enable-web
+      - name: Install dependencies
+        script: flutter pub get
+      - name: Generate code
+        script: dart run build_runner build --delete-conflicting-outputs
+      - name: Prepare Drift web runtime
+        script: dart run tool/prepare_web.dart
+      - name: Build Flutter web
+        script: |
+          flutter build web --release --base-href / \
+            --dart-define=AVALAI_API_KEY="${AVALAI_API_KEY:-}" \
+            --dart-define=AVALAI_BASE_URL="${AVALAI_BASE_URL:-https://api.avalai.ir}" \
+            --dart-define=AI_MODEL="${AI_MODEL:-gemini-3.1-flash-lite}" \
+            --dart-define=SUPABASE_URL="${SUPABASE_URL:-https://evyjrbwibwrdkjakooor.supabase.co}" \
+            --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}" \
+            --dart-define=SUPABASE_SYNC_EMAIL="${SUPABASE_SYNC_EMAIL:-owner@studyhub.app}" \
+            --dart-define=SUPABASE_SYNC_PASSWORD="${SUPABASE_SYNC_PASSWORD:-}"
+      - name: Package web artifact
+        script: |
+          mkdir -p build/release-artifacts
+          tar -czf build/release-artifacts/StudyHUB-Web.tar.gz -C build/web .
+      - name: Deploy web to Vercel
+        script: |
+          if [ -z "${VERCEL_TOKEN:-}" ] || [ -z "${VERCEL_ORG_ID:-}" ] || [ -z "${VERCEL_PROJECT_ID:-}" ]; then
+            echo "Skipping Vercel deploy because VERCEL_TOKEN, VERCEL_ORG_ID, or VERCEL_PROJECT_ID is missing."
+            exit 0
+          fi
+          mkdir -p .vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
+          rm -rf .vercel/output
+          mkdir -p .vercel/output/static
+          cp -R build/web/. .vercel/output/static/
+          cat > .vercel/output/config.json <<'JSON'
+          {
+            "version": 3,
+            "routes": [
+              {
+                "src": "/sqlite3\\.wasm",
+                "headers": {
+                  "Content-Type": "application/wasm",
+                  "Cache-Control": "public, max-age=31536000, immutable"
+                },
+                "continue": true
+              },
+              {
+                "src": "/drift_worker\\.js",
+                "headers": {
+                  "Cache-Control": "public, max-age=31536000, immutable"
+                },
+                "continue": true
+              },
+              {
+                "src": "/assets/(.*)",
+                "headers": {
+                  "Cache-Control": "public, max-age=31536000, immutable"
+                },
+                "continue": true
+              },
+              {
+                "handle": "filesystem"
+              },
+              {
+                "src": "/.*",
+                "dest": "/index.html"
+              }
+            ]
+          }
+          JSON
+          npx --yes vercel@latest deploy --prebuilt --archive=tgz --prod --yes --token "$VERCEL_TOKEN"
+    artifacts:
+      - build/release-artifacts/*.tar.gz
+    publishing:
+      scripts:
+        - name: Publish web asset to GitHub Release
+          script: dart run tool/github_release.dart build/release-artifacts/*.tar.gz
