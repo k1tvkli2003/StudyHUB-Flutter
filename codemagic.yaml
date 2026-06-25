@@ -126,7 +126,7 @@ workflows:
           script: dart run tool/github_release.dart build/release-artifacts/*.tar.gz
 
   windows-release:
-    name: Windows Release
+    name: Windows Release (disabled)
     instance_type: windows_x2
     max_build_duration: 90
     environment:
@@ -139,10 +139,11 @@ workflows:
         - $HOME\AppData\Local\Pub\Cache
     triggering:
       events:
-        - tag
-      tag_patterns:
-        - pattern: v*
+        - push
+      branch_patterns:
+        - pattern: __disabled_windows_release__
           include: true
+          source: true
     scripts:
       - name: Install dependencies
         script: flutter pub get
