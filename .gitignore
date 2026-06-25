@@ -32,6 +32,10 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+/web/drift_worker.js
+/web/drift_worker.js.deps
+/web/drift_worker.js.map
+/web/sqlite3.wasm
 
 # Symbolication related
 app.*.symbols
@@ -43,3 +47,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Release signing material
+*.jks
+*.keystore

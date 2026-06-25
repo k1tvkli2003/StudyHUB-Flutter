@@ -4,17 +4,29 @@ import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../ai/ai_service.dart';
 import '../../data/models/content_models.dart';
 import '../../data/repositories/content_repository.dart';
 import '../../design_system/studyhub_components.dart';
 
-final _lessonProvider = FutureProvider.family<LessonData?, ({String chapterId, String mode})>((ref, args) {
-  final mode = LessonMode.from(args.mode) ?? LessonMode.find;
-  return ref.watch(contentRepositoryProvider).getLesson(args.chapterId, mode);
-});
+final _lessonProvider =
+    FutureProvider.family<LessonData?, ({String chapterId, String mode})>((
+      ref,
+      args,
+    ) {
+      final mode = LessonMode.from(args.mode) ?? LessonMode.find;
+      return ref
+          .watch(contentRepositoryProvider)
+          .getLesson(args.chapterId, mode);
+    });
 
 class LessonReaderScreen extends ConsumerStatefulWidget {
-  const LessonReaderScreen({super.key, required this.chapterId, required this.courseId, required this.mode});
+  const LessonReaderScreen({
+    super.key,
+    required this.chapterId,
+    required this.courseId,
+    required this.mode,
+  });
 
   final String chapterId;
   final String courseId;
@@ -26,10 +38,14 @@ class LessonReaderScreen extends ConsumerStatefulWidget {
 
 class _LessonReaderScreenState extends ConsumerState<LessonReaderScreen> {
   late LessonMode _mode = LessonMode.from(widget.mode) ?? LessonMode.find;
+  bool _askingAi = false;
 
   @override
   Widget build(BuildContext context) {
-    final lesson = ref.watch(_lessonProvider((chapterId: widget.chapterId, mode: _mode.key)));
+    final lesson = ref.watch(
+      _lessonProvider((chapterId: widget.chapterId, mode: _mode.key)),
+    );
+    final currentLesson = lesson.value;
     final colors = Theme.of(context).colorScheme;
     return Scaffold(
       body: CosmicBackground(
@@ -41,25 +57,54 @@ class _LessonReaderScreenState extends ConsumerState<LessonReaderScreen> {
                 child: GlassPanel(
                   child: Row(
                     children: [
-                      IconButton(onPressed: () => context.pop(), icon: const Icon(Icons.arrow_back_rounded)),
+                      IconButton(
+                        onPressed: () => context.pop(),
+                        icon: const Icon(Icons.arrow_back_rounded),
+                      ),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Lesson reader', style: Theme.of(context).textTheme.titleMedium),
-                            Text(widget.chapterId, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12)),
+                            Text(
+                              'Lesson reader',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            Text(
+                              widget.chapterId,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colors.onSurfaceVariant,
+                                fontSize: 12,
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      IconButton.filledTonal(onPressed: () {}, icon: const Icon(Icons.volume_up_rounded), tooltip: 'TTS'),
-                      IconButton.filledTonal(onPressed: () {}, icon: const Icon(Icons.chat_bubble_rounded), tooltip: 'Ask AI'),
+                      IconButton.filledTonal(
+                        onPressed: currentLesson == null || _askingAi
+                            ? null
+                            : () => _askAi(currentLesson),
+                        icon: _askingAi
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.chat_bubble_rounded),
+                        tooltip: 'Ask AI',
+                      ),
                     ],
                   ),
                 ),
               ),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 child: Row(
                   children: [
                     for (final mode in LessonMode.defaultOrder) ...[
@@ -87,17 +132,25 @@ class _LessonReaderScreenState extends ConsumerState<LessonReaderScreen> {
                       child: ListView(
                         padding: const EdgeInsets.fromLTRB(18, 10, 18, 32),
                         children: [
-                          PremiumHeader(title: data.title.ifBlank('Untitled lesson'), subtitle: data.description),
+                          PremiumHeader(
+                            title: data.title.ifBlank('Untitled lesson'),
+                            subtitle: data.description,
+                          ),
                           const SizedBox(height: 16),
-                          for (final section in data.sections) _SectionView(section: section),
-                          if (data.quizQuestions.isNotEmpty) _QuizView(questions: data.quizQuestions),
-                          if (data.flashcards.isNotEmpty) _FlashcardDeck(cards: data.flashcards),
+                          for (final section in data.sections)
+                            _SectionView(section: section),
+                          if (data.quizQuestions.isNotEmpty)
+                            _QuizView(questions: data.quizQuestions),
+                          if (data.flashcards.isNotEmpty)
+                            _FlashcardDeck(cards: data.flashcards),
                         ],
                       ),
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (error, stack) => Center(child: Text('Lesson failed to load: $error')),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (error, stack) =>
+                      Center(child: Text('Lesson failed to load: $error')),
                 ),
               ),
             ],
@@ -105,6 +158,102 @@ class _LessonReaderScreenState extends ConsumerState<LessonReaderScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _askAi(LessonData lesson) async {
+    final controller = TextEditingController();
+    final question = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ask AI'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          minLines: 2,
+          maxLines: 4,
+          decoration: const InputDecoration(labelText: 'Question'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+            child: const Text('Ask'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (question == null || question.isEmpty) return;
+
+    setState(() => _askingAi = true);
+    try {
+      final ai = await ref.read(aiServiceProvider.future);
+      final answer = await ai.chatCompletion(
+        userPrompt: question,
+        systemPrompt:
+            'You are StudyHUB Assistant. Answer using this lesson context, and say when the context is insufficient.\n\n${_lessonPlainText(lesson)}',
+      );
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('AI answer'),
+          content: SizedBox(
+            width: 560,
+            child: SingleChildScrollView(
+              child: SelectableText(
+                answer.isEmpty ? 'AI key is not configured.' : answer,
+              ),
+            ),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Done'),
+            ),
+          ],
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('AI request failed: $error')));
+    } finally {
+      if (mounted) setState(() => _askingAi = false);
+    }
+  }
+
+  String _lessonPlainText(LessonData lesson) {
+    final buffer = StringBuffer()
+      ..writeln(lesson.title)
+      ..writeln(lesson.description);
+    for (final section in lesson.sections) {
+      buffer.writeln('\n${section.title}');
+      if (section.subtitle != null) {
+        buffer.writeln(section.subtitle);
+      }
+      for (final block in section.blocks) {
+        if (block.title != null) {
+          buffer.writeln(block.title);
+        }
+        if (block.content != null && !block.content!.isBlank) {
+          buffer.writeln(block.content!.text);
+        }
+        final table = block.tableData;
+        if (table != null) {
+          buffer.writeln(table.headers.join(' | '));
+          for (final row in table.rows) {
+            buffer.writeln(row.join(' | '));
+          }
+        }
+      }
+    }
+    final text = buffer.toString();
+    return text.length <= 6000 ? text : text.substring(0, 6000);
   }
 }
 
@@ -121,9 +270,19 @@ class _SectionView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(section.title, style: Theme.of(context).textTheme.headlineSmall),
-          if (section.subtitle != null) Text(section.subtitle!, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          if (section.subtitle != null)
+            Text(
+              section.subtitle!,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           const SizedBox(height: 12),
-          for (final block in section.blocks) Padding(padding: const EdgeInsets.only(bottom: 12), child: ContentBlockView(block: block)),
+          for (final block in section.blocks)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: ContentBlockView(block: block),
+            ),
         ],
       ),
     );
@@ -158,44 +317,56 @@ class ContentBlockView extends StatelessWidget {
               Expanded(
                 child: Text(
                   block.title ?? _labelFor(block.type),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(color: accent, fontWeight: FontWeight.w900),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: accent,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
           if (block.tableData != null) _TableBlock(data: block.tableData!),
-          if (block.content != null && !block.content!.isBlank) _RichContent(value: block.content!),
-          if (block.imageFileName != null) Text(block.imageFileName!, style: TextStyle(color: colors.onSurfaceVariant, fontFamily: 'JetBrainsMono')),
+          if (block.content != null && !block.content!.isBlank)
+            _RichContent(value: block.content!),
+          if (block.imageFileName != null)
+            Text(
+              block.imageFileName!,
+              style: TextStyle(
+                color: colors.onSurfaceVariant,
+                fontFamily: 'JetBrainsMono',
+              ),
+            ),
         ],
       ),
     );
   }
 
   IconData _iconFor(ContentType type) => switch (type) {
-        ContentType.important => Icons.priority_high_rounded,
-        ContentType.clinicalPearl => Icons.lightbulb_rounded,
-        ContentType.mechanism => Icons.hub_rounded,
-        ContentType.analogy => Icons.bolt_rounded,
-        ContentType.image || ContentType.imageExplanation => Icons.image_rounded,
-        ContentType.table || ContentType.comparisonTable => Icons.table_chart_rounded,
-        _ => Icons.auto_stories_rounded,
-      };
+    ContentType.important => Icons.priority_high_rounded,
+    ContentType.clinicalPearl => Icons.lightbulb_rounded,
+    ContentType.mechanism => Icons.hub_rounded,
+    ContentType.analogy => Icons.bolt_rounded,
+    ContentType.image || ContentType.imageExplanation => Icons.image_rounded,
+    ContentType.table ||
+    ContentType.comparisonTable => Icons.table_chart_rounded,
+    _ => Icons.auto_stories_rounded,
+  };
 
   String _labelFor(ContentType type) => switch (type) {
-        ContentType.important => 'نکته مهم',
-        ContentType.clinicalPearl => 'گوهره بالینی',
-        ContentType.mechanism => 'سازوکار',
-        ContentType.analogy => 'انگاره',
-        ContentType.highYield => 'شاه‌بیت',
-        ContentType.summaryBox => 'جمع‌بندی',
-        ContentType.table || ContentType.comparisonTable => 'جدول',
-        ContentType.takeaway => 'برداشت کلیدی',
-        ContentType.step => 'گام',
-        ContentType.pathway => 'مسیر',
-        ContentType.mnemonic => 'یادمان',
-        _ => 'درسنامه',
-      };
+    ContentType.important => 'نکته مهم',
+    ContentType.clinicalPearl => 'گوهره بالینی',
+    ContentType.mechanism => 'سازوکار',
+    ContentType.analogy => 'انگاره',
+    ContentType.highYield => 'شاه‌بیت',
+    ContentType.summaryBox => 'جمع‌بندی',
+    ContentType.table || ContentType.comparisonTable => 'جدول',
+    ContentType.takeaway => 'برداشت کلیدی',
+    ContentType.step => 'گام',
+    ContentType.pathway => 'مسیر',
+    ContentType.mnemonic => 'یادمان',
+    _ => 'درسنامه',
+  };
 }
 
 class _RichContent extends StatelessWidget {
@@ -212,7 +383,10 @@ class _RichContent extends StatelessWidget {
         children: [
           for (var i = 0; i < parts.length; i++)
             if (i.isOdd)
-              Math.tex(parts[i], textStyle: Theme.of(context).textTheme.bodyLarge)
+              Math.tex(
+                parts[i],
+                textStyle: Theme.of(context).textTheme.bodyLarge,
+              )
             else
               MarkdownBody(data: parts[i], selectable: true),
         ],
@@ -245,9 +419,12 @@ class _TableBlock extends StatelessWidget {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
-        columns: [for (final header in data.headers) DataColumn(label: Text(header))],
+        columns: [
+          for (final header in data.headers) DataColumn(label: Text(header)),
+        ],
         rows: [
-          for (final row in data.rows) DataRow(cells: [for (final cell in row) DataCell(Text(cell))]),
+          for (final row in data.rows)
+            DataRow(cells: [for (final cell in row) DataCell(Text(cell))]),
         ],
       ),
     );
@@ -267,7 +444,11 @@ class _QuizView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Quiz', style: Theme.of(context).textTheme.titleLarge),
-          for (final question in questions.take(5)) ListTile(title: Text(question.question), subtitle: Text(question.options.join(' · '))),
+          for (final question in questions.take(5))
+            ListTile(
+              title: Text(question.question),
+              subtitle: Text(question.options.join(' · ')),
+            ),
         ],
       ),
     );
@@ -287,7 +468,8 @@ class _FlashcardDeck extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Flashcards', style: Theme.of(context).textTheme.titleLarge),
-          for (final card in cards.take(6)) ListTile(title: Text(card.question), subtitle: Text(card.answer)),
+          for (final card in cards.take(6))
+            ListTile(title: Text(card.question), subtitle: Text(card.answer)),
         ],
       ),
     );
@@ -306,7 +488,10 @@ class _ReaderEmpty extends StatelessWidget {
           children: [
             const Icon(Icons.cloud_off_rounded, size: 42),
             const SizedBox(height: 10),
-            Text('Lesson is not cached yet', style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'Lesson is not cached yet',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 6),
             Text('Refresh courses or connect to Supabase to load this lesson.'),
           ],

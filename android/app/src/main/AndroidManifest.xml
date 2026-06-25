@@ -48,6 +48,16 @@
                 <data android:scheme="studyhub" android:host="app" />
             </intent-filter>
         </activity>
+        <receiver
+            android:name=".StudyHubWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/studyhub_widget" />
+        </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

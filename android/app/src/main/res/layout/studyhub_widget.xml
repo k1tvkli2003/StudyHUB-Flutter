@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/studyhub_widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="8dp"
+    android:background="@drawable/studyhub_widget_background"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <TextView
+        android:id="@+id/studyhub_widget_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="#182033"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        tools:text="StudyHUB" />
+
+    <TextView
+        android:id="@+id/studyhub_widget_message"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="3"
+        android:textColor="#4F5B76"
+        android:textSize="13sp"
+        tools:text="2 PDFs · 12 due cards" />
+
+    <TextView
+        android:id="@+id/studyhub_widget_footer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="#5D6FEB"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        tools:text="Open today" />
+</LinearLayout>

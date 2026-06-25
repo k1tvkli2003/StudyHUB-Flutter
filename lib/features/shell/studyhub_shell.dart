@@ -10,8 +10,14 @@ enum StudyHubDestination {
   review('/review', 'Review', 'مرور', Icons.cached_rounded),
   settings('/settings', 'Settings', 'تنظیمات', Icons.settings_rounded),
   stats('/stats', 'Study Stats', 'آمار', Icons.query_stats_rounded),
-  achievements('/achievements', 'Achievements', 'نشان‌ها', Icons.emoji_events_rounded),
-  mindmap('/mindmap', 'Mind Map', 'نقشه ذهنی', Icons.account_tree_rounded);
+  achievements(
+    '/achievements',
+    'Achievements',
+    'نشان‌ها',
+    Icons.emoji_events_rounded,
+  ),
+  mindmap('/mindmap', 'Mind Map', 'نقشه ذهنی', Icons.account_tree_rounded),
+  pomodoro('/pomodoro', 'Pomodoro', 'تمرکز', Icons.hourglass_bottom_rounded);
 
   const StudyHubDestination(this.path, this.label, this.shortLabel, this.icon);
 
@@ -21,7 +27,7 @@ enum StudyHubDestination {
   final IconData icon;
 
   static const primary = [dashboard, library, planner, review];
-  static const secondary = [settings, stats, achievements, mindmap];
+  static const secondary = [settings, stats, achievements, mindmap, pomodoro];
 }
 
 class StudyHubShell extends StatelessWidget {
@@ -68,26 +74,49 @@ class _SideRail extends StatelessWidget {
           children: [
             Row(
               children: [
-                Image.asset('assets/images/app_icon.png', width: 42, height: 42),
+                Image.asset(
+                  'assets/images/app_icon.png',
+                  width: 42,
+                  height: 42,
+                ),
                 const SizedBox(width: 10),
                 Image.asset('assets/images/namelogo.png', height: 24),
               ],
             ),
             const SizedBox(height: 30),
-            ...StudyHubDestination.primary.map((d) => _RailItem(destination: d, location: location)),
+            ...StudyHubDestination.primary.map(
+              (d) => _RailItem(destination: d, location: location),
+            ),
             const SizedBox(height: 18),
-            Text('More', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant)),
+            Text(
+              'More',
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant),
+            ),
             const SizedBox(height: 8),
-            ...StudyHubDestination.secondary.map((d) => _RailItem(destination: d, location: location)),
+            ...StudyHubDestination.secondary.map(
+              (d) => _RailItem(destination: d, location: location),
+            ),
             const Spacer(),
             StudyCard(
               padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Gemini Flash Lite', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: colors.primary)),
+                  Text(
+                    'Gemini Flash Lite',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelMedium?.copyWith(color: colors.primary),
+                  ),
                   const SizedBox(height: 8),
-                  Text('local-first library', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant)),
+                  Text(
+                    'local-first library',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -122,15 +151,18 @@ class _RailItem extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(destination.icon, color: selected ? colors.primary : colors.onSurfaceVariant),
+              Icon(
+                destination.icon,
+                color: selected ? colors.primary : colors.onSurfaceVariant,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   destination.label,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: selected ? colors.primary : colors.onSurfaceVariant,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: selected ? colors.primary : colors.onSurfaceVariant,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],
@@ -148,14 +180,23 @@ class _BottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final destinations = [...StudyHubDestination.primary, StudyHubDestination.settings];
-    final index = destinations.indexWhere((d) => location.startsWith(d.path)).clamp(0, destinations.length - 1);
+    final destinations = [
+      ...StudyHubDestination.primary,
+      StudyHubDestination.settings,
+    ];
+    final index = destinations
+        .indexWhere((d) => location.startsWith(d.path))
+        .clamp(0, destinations.length - 1);
     return NavigationBar(
       selectedIndex: index,
       onDestinationSelected: (i) => context.go(destinations[i].path),
       destinations: [
         for (final d in destinations)
-          NavigationDestination(icon: Icon(d.icon), selectedIcon: Icon(d.icon), label: d.shortLabel),
+          NavigationDestination(
+            icon: Icon(d.icon),
+            selectedIcon: Icon(d.icon),
+            label: d.shortLabel,
+          ),
       ],
     );
   }

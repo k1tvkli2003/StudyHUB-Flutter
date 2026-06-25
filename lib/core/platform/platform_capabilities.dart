@@ -1,4 +1,4 @@
-import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart';
 
 class PlatformCapabilities {
   const PlatformCapabilities({
@@ -11,11 +11,21 @@ class PlatformCapabilities {
   });
 
   factory PlatformCapabilities.current() {
-    final android = Platform.isAndroid;
-    final ios = Platform.isIOS;
-    final macos = Platform.isMacOS;
-    final windows = Platform.isWindows;
-    final linux = Platform.isLinux;
+    if (kIsWeb) {
+      return const PlatformCapabilities(
+        homeWidgets: false,
+        cameraOcr: false,
+        biometric: false,
+        systemNotifications: false,
+        backgroundPomodoro: false,
+        desktopCompanion: false,
+      );
+    }
+    final android = defaultTargetPlatform == TargetPlatform.android;
+    final ios = defaultTargetPlatform == TargetPlatform.iOS;
+    final macos = defaultTargetPlatform == TargetPlatform.macOS;
+    final windows = defaultTargetPlatform == TargetPlatform.windows;
+    final linux = defaultTargetPlatform == TargetPlatform.linux;
     return PlatformCapabilities(
       homeWidgets: android || ios,
       cameraOcr: android || ios,

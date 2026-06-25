@@ -998,6 +998,304 @@ class PdfsCompanion extends UpdateCompanion<Pdf> {
   }
 }
 
+class $PdfFileBlobsTable extends PdfFileBlobs
+    with TableInfo<$PdfFileBlobsTable, PdfFileBlob> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PdfFileBlobsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _pdfIdMeta = const VerificationMeta('pdfId');
+  @override
+  late final GeneratedColumn<int> pdfId = GeneratedColumn<int>(
+    'pdfId',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fileNameMeta = const VerificationMeta(
+    'fileName',
+  );
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+    'fileName',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bytesMeta = const VerificationMeta('bytes');
+  @override
+  late final GeneratedColumn<Uint8List> bytes = GeneratedColumn<Uint8List>(
+    'bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updatedAt',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [pdfId, fileName, bytes, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pdf_file_blobs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PdfFileBlob> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('pdfId')) {
+      context.handle(
+        _pdfIdMeta,
+        pdfId.isAcceptableOrUnknown(data['pdfId']!, _pdfIdMeta),
+      );
+    }
+    if (data.containsKey('fileName')) {
+      context.handle(
+        _fileNameMeta,
+        fileName.isAcceptableOrUnknown(data['fileName']!, _fileNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('bytes')) {
+      context.handle(
+        _bytesMeta,
+        bytes.isAcceptableOrUnknown(data['bytes']!, _bytesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bytesMeta);
+    }
+    if (data.containsKey('updatedAt')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updatedAt']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {pdfId};
+  @override
+  PdfFileBlob map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PdfFileBlob(
+      pdfId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pdfId'],
+      )!,
+      fileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fileName'],
+      )!,
+      bytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}bytes'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updatedAt'],
+      )!,
+    );
+  }
+
+  @override
+  $PdfFileBlobsTable createAlias(String alias) {
+    return $PdfFileBlobsTable(attachedDatabase, alias);
+  }
+}
+
+class PdfFileBlob extends DataClass implements Insertable<PdfFileBlob> {
+  final int pdfId;
+  final String fileName;
+  final Uint8List bytes;
+  final int updatedAt;
+  const PdfFileBlob({
+    required this.pdfId,
+    required this.fileName,
+    required this.bytes,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['pdfId'] = Variable<int>(pdfId);
+    map['fileName'] = Variable<String>(fileName);
+    map['bytes'] = Variable<Uint8List>(bytes);
+    map['updatedAt'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  PdfFileBlobsCompanion toCompanion(bool nullToAbsent) {
+    return PdfFileBlobsCompanion(
+      pdfId: Value(pdfId),
+      fileName: Value(fileName),
+      bytes: Value(bytes),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory PdfFileBlob.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PdfFileBlob(
+      pdfId: serializer.fromJson<int>(json['pdfId']),
+      fileName: serializer.fromJson<String>(json['fileName']),
+      bytes: serializer.fromJson<Uint8List>(json['bytes']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'pdfId': serializer.toJson<int>(pdfId),
+      'fileName': serializer.toJson<String>(fileName),
+      'bytes': serializer.toJson<Uint8List>(bytes),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  PdfFileBlob copyWith({
+    int? pdfId,
+    String? fileName,
+    Uint8List? bytes,
+    int? updatedAt,
+  }) => PdfFileBlob(
+    pdfId: pdfId ?? this.pdfId,
+    fileName: fileName ?? this.fileName,
+    bytes: bytes ?? this.bytes,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  PdfFileBlob copyWithCompanion(PdfFileBlobsCompanion data) {
+    return PdfFileBlob(
+      pdfId: data.pdfId.present ? data.pdfId.value : this.pdfId,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      bytes: data.bytes.present ? data.bytes.value : this.bytes,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PdfFileBlob(')
+          ..write('pdfId: $pdfId, ')
+          ..write('fileName: $fileName, ')
+          ..write('bytes: $bytes, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(pdfId, fileName, $driftBlobEquality.hash(bytes), updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PdfFileBlob &&
+          other.pdfId == this.pdfId &&
+          other.fileName == this.fileName &&
+          $driftBlobEquality.equals(other.bytes, this.bytes) &&
+          other.updatedAt == this.updatedAt);
+}
+
+class PdfFileBlobsCompanion extends UpdateCompanion<PdfFileBlob> {
+  final Value<int> pdfId;
+  final Value<String> fileName;
+  final Value<Uint8List> bytes;
+  final Value<int> updatedAt;
+  const PdfFileBlobsCompanion({
+    this.pdfId = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.bytes = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  PdfFileBlobsCompanion.insert({
+    this.pdfId = const Value.absent(),
+    required String fileName,
+    required Uint8List bytes,
+    required int updatedAt,
+  }) : fileName = Value(fileName),
+       bytes = Value(bytes),
+       updatedAt = Value(updatedAt);
+  static Insertable<PdfFileBlob> custom({
+    Expression<int>? pdfId,
+    Expression<String>? fileName,
+    Expression<Uint8List>? bytes,
+    Expression<int>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (pdfId != null) 'pdfId': pdfId,
+      if (fileName != null) 'fileName': fileName,
+      if (bytes != null) 'bytes': bytes,
+      if (updatedAt != null) 'updatedAt': updatedAt,
+    });
+  }
+
+  PdfFileBlobsCompanion copyWith({
+    Value<int>? pdfId,
+    Value<String>? fileName,
+    Value<Uint8List>? bytes,
+    Value<int>? updatedAt,
+  }) {
+    return PdfFileBlobsCompanion(
+      pdfId: pdfId ?? this.pdfId,
+      fileName: fileName ?? this.fileName,
+      bytes: bytes ?? this.bytes,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (pdfId.present) {
+      map['pdfId'] = Variable<int>(pdfId.value);
+    }
+    if (fileName.present) {
+      map['fileName'] = Variable<String>(fileName.value);
+    }
+    if (bytes.present) {
+      map['bytes'] = Variable<Uint8List>(bytes.value);
+    }
+    if (updatedAt.present) {
+      map['updatedAt'] = Variable<int>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PdfFileBlobsCompanion(')
+          ..write('pdfId: $pdfId, ')
+          ..write('fileName: $fileName, ')
+          ..write('bytes: $bytes, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $LessonForksTable extends LessonForks
     with TableInfo<$LessonForksTable, LessonFork> {
   @override
@@ -9716,6 +10014,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $PdfsTable pdfs = $PdfsTable(this);
+  late final $PdfFileBlobsTable pdfFileBlobs = $PdfFileBlobsTable(this);
   late final $LessonForksTable lessonForks = $LessonForksTable(this);
   late final $FlashcardsTable flashcards = $FlashcardsTable(this);
   late final $StudyPlansTable studyPlans = $StudyPlansTable(this);
@@ -9745,6 +10044,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     pdfs,
+    pdfFileBlobs,
     lessonForks,
     flashcards,
     studyPlans,
@@ -10198,6 +10498,181 @@ typedef $$PdfsTableProcessedTableManager =
       $$PdfsTableUpdateCompanionBuilder,
       (Pdf, BaseReferences<_$AppDatabase, $PdfsTable, Pdf>),
       Pdf,
+      PrefetchHooks Function()
+    >;
+typedef $$PdfFileBlobsTableCreateCompanionBuilder =
+    PdfFileBlobsCompanion Function({
+      Value<int> pdfId,
+      required String fileName,
+      required Uint8List bytes,
+      required int updatedAt,
+    });
+typedef $$PdfFileBlobsTableUpdateCompanionBuilder =
+    PdfFileBlobsCompanion Function({
+      Value<int> pdfId,
+      Value<String> fileName,
+      Value<Uint8List> bytes,
+      Value<int> updatedAt,
+    });
+
+class $$PdfFileBlobsTableFilterComposer
+    extends Composer<_$AppDatabase, $PdfFileBlobsTable> {
+  $$PdfFileBlobsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get pdfId => $composableBuilder(
+    column: $table.pdfId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PdfFileBlobsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PdfFileBlobsTable> {
+  $$PdfFileBlobsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get pdfId => $composableBuilder(
+    column: $table.pdfId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PdfFileBlobsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PdfFileBlobsTable> {
+  $$PdfFileBlobsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get pdfId =>
+      $composableBuilder(column: $table.pdfId, builder: (column) => column);
+
+  GeneratedColumn<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get bytes =>
+      $composableBuilder(column: $table.bytes, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$PdfFileBlobsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PdfFileBlobsTable,
+          PdfFileBlob,
+          $$PdfFileBlobsTableFilterComposer,
+          $$PdfFileBlobsTableOrderingComposer,
+          $$PdfFileBlobsTableAnnotationComposer,
+          $$PdfFileBlobsTableCreateCompanionBuilder,
+          $$PdfFileBlobsTableUpdateCompanionBuilder,
+          (
+            PdfFileBlob,
+            BaseReferences<_$AppDatabase, $PdfFileBlobsTable, PdfFileBlob>,
+          ),
+          PdfFileBlob,
+          PrefetchHooks Function()
+        > {
+  $$PdfFileBlobsTableTableManager(_$AppDatabase db, $PdfFileBlobsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PdfFileBlobsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PdfFileBlobsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PdfFileBlobsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> pdfId = const Value.absent(),
+                Value<String> fileName = const Value.absent(),
+                Value<Uint8List> bytes = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+              }) => PdfFileBlobsCompanion(
+                pdfId: pdfId,
+                fileName: fileName,
+                bytes: bytes,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> pdfId = const Value.absent(),
+                required String fileName,
+                required Uint8List bytes,
+                required int updatedAt,
+              }) => PdfFileBlobsCompanion.insert(
+                pdfId: pdfId,
+                fileName: fileName,
+                bytes: bytes,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PdfFileBlobsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PdfFileBlobsTable,
+      PdfFileBlob,
+      $$PdfFileBlobsTableFilterComposer,
+      $$PdfFileBlobsTableOrderingComposer,
+      $$PdfFileBlobsTableAnnotationComposer,
+      $$PdfFileBlobsTableCreateCompanionBuilder,
+      $$PdfFileBlobsTableUpdateCompanionBuilder,
+      (
+        PdfFileBlob,
+        BaseReferences<_$AppDatabase, $PdfFileBlobsTable, PdfFileBlob>,
+      ),
+      PdfFileBlob,
       PrefetchHooks Function()
     >;
 typedef $$LessonForksTableCreateCompanionBuilder =
@@ -14698,6 +15173,8 @@ class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
   $$PdfsTableTableManager get pdfs => $$PdfsTableTableManager(_db, _db.pdfs);
+  $$PdfFileBlobsTableTableManager get pdfFileBlobs =>
+      $$PdfFileBlobsTableTableManager(_db, _db.pdfFileBlobs);
   $$LessonForksTableTableManager get lessonForks =>
       $$LessonForksTableTableManager(_db, _db.lessonForks);
   $$FlashcardsTableTableManager get flashcards =>

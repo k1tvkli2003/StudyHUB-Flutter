@@ -3,7 +3,12 @@ name: Flutter Multi-Platform Build
 on:
   push:
     branches: [main]
+    tags: ['v*']
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Optional release tag for publishing artifacts
+        required: false
   release:
     types: [created]
 
@@ -12,7 +17,7 @@ permissions:
 
 jobs:
   analyze_test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -26,7 +31,7 @@ jobs:
 
   android:
     needs: analyze_test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -35,11 +40,22 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: dart run build_runner build --delete-conflicting-outputs
+      - name: Prepare Android signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/studyhub-release.jks"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/studyhub-release.jks" >> "$GITHUB_ENV"
+          fi
       - name: Build APK and appbundle
         env:
           AVALAI_API_KEY: ${{ secrets.AVALAI_API_KEY }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SYNC_PASSWORD: ${{ secrets.SUPABASE_SYNC_PASSWORD }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           flutter build apk --release --dart-define=AVALAI_API_KEY="$AVALAI_API_KEY" --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" --dart-define=SUPABASE_SYNC_PASSWORD="$SUPABASE_SYNC_PASSWORD"
           flutter build appbundle --release --dart-define=AVALAI_API_KEY="$AVALAI_API_KEY" --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" --dart-define=SUPABASE_SYNC_PASSWORD="$SUPABASE_SYNC_PASSWORD"
@@ -52,7 +68,7 @@ jobs:
 
   ios_macos:
     needs: analyze_test
-    runs-on: macos-latest
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -72,7 +88,7 @@ jobs:
 
   windows:
     needs: analyze_test
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -89,7 +105,7 @@ jobs:
 
   linux:
     needs: analyze_test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -105,3 +121,136 @@ jobs:
         with:
           name: StudyHUB-Linux
           path: build/linux/x64/release/bundle/**
+
+  web:
+    needs: analyze_test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter config --enable-web
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: dart run tool/prepare_web.dart
+      - name: Build Flutter Web
+        env:
+          AVALAI_API_KEY: ${{ secrets.AVALAI_API_KEY }}
+          AVALAI_BASE_URL: ${{ secrets.AVALAI_BASE_URL }}
+          AI_MODEL: ${{ secrets.AI_MODEL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SYNC_EMAIL: ${{ secrets.SUPABASE_SYNC_EMAIL }}
+          SUPABASE_SYNC_PASSWORD: ${{ secrets.SUPABASE_SYNC_PASSWORD }}
+        run: |
+          flutter build web --release --base-href / \
+            --dart-define=AVALAI_API_KEY="$AVALAI_API_KEY" \
+            --dart-define=AVALAI_BASE_URL="${AVALAI_BASE_URL:-https://api.avalai.ir}" \
+            --dart-define=AI_MODEL="${AI_MODEL:-gemini-3.1-flash-lite}" \
+            --dart-define=SUPABASE_URL="${SUPABASE_URL:-https://evyjrbwibwrdkjakooor.supabase.co}" \
+            --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
+            --dart-define=SUPABASE_SYNC_EMAIL="${SUPABASE_SYNC_EMAIL:-owner@studyhub.app}" \
+            --dart-define=SUPABASE_SYNC_PASSWORD="$SUPABASE_SYNC_PASSWORD"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StudyHUB-Web
+          path: build/web/**
+
+  deploy_web_vercel:
+    needs: web
+    if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: StudyHUB-Web
+          path: build/web
+      - name: Deploy web to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || 'team_KEnGuOSJsyB18Sk7liL1NMzH' }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID || 'prj_7rrSnRMHLtwzQiZjAx1bQuFca647' }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "Skipping Vercel deploy because VERCEL_TOKEN, VERCEL_ORG_ID, or VERCEL_PROJECT_ID is missing."
+            exit 0
+          fi
+          mkdir -p .vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
+          rm -rf .vercel/output
+          mkdir -p .vercel/output/static
+          cp -R build/web/. .vercel/output/static/
+          cat > .vercel/output/config.json <<'JSON'
+          {
+            "version": 3,
+            "routes": [
+              {
+                "src": "/sqlite3\\.wasm",
+                "headers": {
+                  "Content-Type": "application/wasm",
+                  "Cache-Control": "public, max-age=31536000, immutable"
+                },
+                "continue": true
+              },
+              {
+                "src": "/drift_worker\\.js",
+                "headers": {
+                  "Cache-Control": "public, max-age=31536000, immutable"
+                },
+                "continue": true
+              },
+              {
+                "src": "/assets/(.*)",
+                "headers": {
+                  "Cache-Control": "public, max-age=31536000, immutable"
+                },
+                "continue": true
+              },
+              {
+                "handle": "filesystem"
+              },
+              {
+                "src": "/.*",
+                "dest": "/index.html"
+              }
+            ]
+          }
+          JSON
+          npx --yes vercel@latest deploy --prebuilt --archive=tgz --prod --yes --token "$VERCEL_TOKEN"
+
+  publish_release:
+    needs: [android, ios_macos, windows, linux, web]
+    if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Pack artifacts
+        run: |
+          cd artifacts
+          for dir in *; do
+            zip -r "../${dir}.zip" "$dir"
+          done
+      - name: Resolve release tag
+        id: release_tag
+        env:
+          INPUT_RELEASE_TAG: ${{ github.event.inputs.release_tag || '' }}
+          EVENT_RELEASE_TAG: ${{ github.event.release.tag_name || '' }}
+        run: |
+          if [ -n "$INPUT_RELEASE_TAG" ]; then
+            echo "tag=$INPUT_RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          elif [ -n "$EVENT_RELEASE_TAG" ]; then
+            echo "tag=$EVENT_RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=manual-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          draft: ${{ github.event_name == 'workflow_dispatch' }}
+          files: StudyHUB-*.zip

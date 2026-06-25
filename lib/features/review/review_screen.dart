@@ -6,7 +6,9 @@ import '../../data/models/study_models.dart';
 import '../../design_system/studyhub_components.dart';
 import '../shared/screen_frame.dart';
 
-final _reviewCardsProvider = StreamProvider((ref) => ref.watch(appDatabaseProvider).watchDueFlashcards());
+final _reviewCardsProvider = StreamProvider(
+  (ref) => ref.watch(appDatabaseProvider).watchDueFlashcards(),
+);
 
 class ReviewScreen extends ConsumerWidget {
   const ReviewScreen({super.key});
@@ -16,16 +18,26 @@ class ReviewScreen extends ConsumerWidget {
     final cards = ref.watch(_reviewCardsProvider).value ?? const [];
     return ScreenFrame(
       children: [
-        PremiumHeader(title: 'Review', subtitle: '${cards.length} due cards · SM-2 scheduling preserved'),
+        PremiumHeader(
+          title: 'Review',
+          subtitle: '${cards.length} due cards · SM-2 scheduling preserved',
+        ),
         if (cards.isEmpty)
-          const StudyCard(child: Text('No cards are due. Add lesson flashcards or generate review material from a PDF section.'))
+          const StudyCard(
+            child: Text(
+              'No cards are due. Add lesson flashcards or generate review material from a PDF section.',
+            ),
+          )
         else
           StudyCard(
             accent: Theme.of(context).colorScheme.secondary,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(cards.first.question, style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  cards.first.question,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const SizedBox(height: 12),
                 Text(cards.first.answer),
                 const SizedBox(height: 16),
@@ -34,26 +46,52 @@ class ReviewScreen extends ConsumerWidget {
                   children: [
                     for (final grade in [1, 3, 4, 5])
                       OutlinedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           final card = cards.first;
-                          SrsCalculator.calculate(
+                          final next = SrsCalculator.calculate(
                             FlashcardRecord(
                               id: card.id,
                               pdfId: card.pdfId,
                               question: card.question,
                               answer: card.answer,
                               type: card.type,
+                              options: card.options,
+                              correctOptionIndex: card.correctOptionIndex,
                               topic: card.topic,
                               intervalDays: card.intervalDays,
                               easeFactor: card.easeFactor,
                               nextReviewAt: card.nextReviewAt,
                               successiveCorrect: card.successiveCorrect,
                               wrongCount: card.wrongCount,
+                              sourceKey: card.sourceKey,
                             ),
                             grade,
                           );
+                          await ref
+                              .read(appDatabaseProvider)
+                              .updateFlashcardReview(
+                                id: card.id,
+                                intervalDays: next.intervalDays,
+                                easeFactor: next.easeFactor,
+                                nextReviewAt: next.nextReviewAt,
+                                successiveCorrect: next.successiveCorrect,
+                                wrongCount: next.wrongCount,
+                              );
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Scheduled next review in ${next.intervalDays} day(s).',
+                              ),
+                            ),
+                          );
                         },
-                        child: Text(switch (grade) { 1 => 'Again', 3 => 'Hard', 4 => 'Good', _ => 'Easy' }),
+                        child: Text(switch (grade) {
+                          1 => 'Again',
+                          3 => 'Hard',
+                          4 => 'Good',
+                          _ => 'Easy',
+                        }),
                       ),
                   ],
                 ),

@@ -12,7 +12,8 @@ class Pdfs extends Table {
   IntColumn get pageCount => integer().nullable().named('pageCount')();
   TextColumn get processingStatus => text().named('processingStatus')();
   TextColumn get subjects => text().nullable()();
-  TextColumn get difficultyLevel => text().nullable().named('difficultyLevel')();
+  TextColumn get difficultyLevel =>
+      text().nullable().named('difficultyLevel')();
   TextColumn get contentFormat => text().nullable().named('contentFormat')();
   IntColumn get progression => integer().withDefault(const Constant(0))();
   TextColumn get outline => text().nullable()();
@@ -20,10 +21,24 @@ class Pdfs extends Table {
   IntColumn get lastOpenedAt => integer().nullable().named('lastOpenedAt')();
   TextColumn get coverColor => text().nullable().named('coverColor')();
   IntColumn get targetDays => integer().nullable().named('targetDays')();
-  TextColumn get thumbnailBase64 => text().nullable().named('thumbnailBase64')();
+  TextColumn get thumbnailBase64 =>
+      text().nullable().named('thumbnailBase64')();
   TextColumn get localFileName => text().nullable().named('localFileName')();
   TextColumn get thumbnailPath => text().nullable().named('thumbnailPath')();
   TextColumn get remoteId => text().nullable().named('remoteId')();
+}
+
+class PdfFileBlobs extends Table {
+  @override
+  String get tableName => 'pdf_file_blobs';
+
+  IntColumn get pdfId => integer().named('pdfId')();
+  TextColumn get fileName => text().named('fileName')();
+  BlobColumn get bytes => blob()();
+  IntColumn get updatedAt => integer().named('updatedAt')();
+
+  @override
+  Set<Column> get primaryKey => {pdfId};
 }
 
 class LessonForks extends Table {
@@ -39,9 +54,11 @@ class LessonForks extends Table {
   TextColumn get scopeLabel => text().named('scopeLabel')();
   IntColumn get startPage => integer().nullable().named('startPage')();
   IntColumn get endPage => integer().nullable().named('endPage')();
-  TextColumn get contentJson => text().withDefault(const Constant('')).named('contentJson')();
+  TextColumn get contentJson =>
+      text().withDefault(const Constant('')).named('contentJson')();
   TextColumn get status => text()();
-  RealColumn get progress => real().withDefault(const Constant(0)).named('progress')();
+  RealColumn get progress =>
+      real().withDefault(const Constant(0)).named('progress')();
   TextColumn get model => text().withDefault(const Constant(''))();
   IntColumn get createdAt => integer().named('createdAt')();
   IntColumn get updatedAt => integer().named('updatedAt')();
@@ -60,7 +77,8 @@ class Flashcards extends Table {
   TextColumn get answer => text()();
   TextColumn get type => text()();
   TextColumn get options => text().nullable()();
-  IntColumn get correctOptionIndex => integer().nullable().named('correctOptionIndex')();
+  IntColumn get correctOptionIndex =>
+      integer().nullable().named('correctOptionIndex')();
   TextColumn get topic => text()();
   IntColumn get intervalDays => integer().named('intervalDays')();
   RealColumn get easeFactor => real().named('easeFactor')();
@@ -84,7 +102,8 @@ class StudyPlans extends Table {
   IntColumn get endPage => integer().nullable().named('endPage')();
   BoolColumn get completed => boolean().withDefault(const Constant(false))();
   TextColumn get source => text().withDefault(const Constant('AI'))();
-  TextColumn get sourceType => text().withDefault(const Constant('PDF')).named('sourceType')();
+  TextColumn get sourceType =>
+      text().withDefault(const Constant('PDF')).named('sourceType')();
   TextColumn get chapterId => text().nullable().named('chapterId')();
   TextColumn get mode => text().nullable()();
   TextColumn get courseId => text().nullable().named('courseId')();
@@ -98,7 +117,8 @@ class ChatMessages extends Table {
   IntColumn get pdfId => integer().named('pdfId')();
   TextColumn get role => text()();
   TextColumn get textValue => text().named('text')();
-  BoolColumn get isAudio => boolean().withDefault(const Constant(false)).named('isAudio')();
+  BoolColumn get isAudio =>
+      boolean().withDefault(const Constant(false)).named('isAudio')();
   TextColumn get audioData => text().nullable().named('audioData')();
   IntColumn get createdAt => integer().named('createdAt')();
 }
@@ -136,9 +156,12 @@ class StudyActivity extends Table {
   String get tableName => 'study_activity';
 
   TextColumn get date => text()();
-  IntColumn get minutesStudied => integer().withDefault(const Constant(0)).named('minutesStudied')();
-  IntColumn get pagesRead => integer().withDefault(const Constant(0)).named('pagesRead')();
-  IntColumn get cardsReviewed => integer().withDefault(const Constant(0)).named('cardsReviewed')();
+  IntColumn get minutesStudied =>
+      integer().withDefault(const Constant(0)).named('minutesStudied')();
+  IntColumn get pagesRead =>
+      integer().withDefault(const Constant(0)).named('pagesRead')();
+  IntColumn get cardsReviewed =>
+      integer().withDefault(const Constant(0)).named('cardsReviewed')();
 
   @override
   Set<Column> get primaryKey => {date};
@@ -296,9 +319,57 @@ class ContentLessonStates extends Table {
   Set<Column> get primaryKey => {chapterId};
 }
 
+class _AchievementSeed {
+  const _AchievementSeed(this.id, this.title, this.description);
+
+  final String id;
+  final String title;
+  final String description;
+}
+
+const _achievementSeeds = [
+  _AchievementSeed(
+    'first_pdf',
+    'First Library Import',
+    'Import your first PDF into StudyHUB.',
+  ),
+  _AchievementSeed(
+    'first_review',
+    'First Recall',
+    'Review your first flashcard.',
+  ),
+  _AchievementSeed(
+    'focused_hour',
+    'Focused Hour',
+    'Log 60 minutes of focused study.',
+  ),
+  _AchievementSeed(
+    'page_sprinter',
+    'Page Sprinter',
+    'Read 25 tracked PDF pages.',
+  ),
+  _AchievementSeed(
+    'planner_finisher',
+    'Plan Keeper',
+    'Complete a planned study session.',
+  ),
+  _AchievementSeed(
+    'first_pomodoro',
+    'First Pomodoro',
+    'Complete a 25 minute focus session.',
+  ),
+  _AchievementSeed('recall_stack', 'Recall Stack', 'Review 50 flashcards.'),
+  _AchievementSeed(
+    'weekly_rhythm',
+    'Weekly Rhythm',
+    'Study on seven different days.',
+  ),
+];
+
 @DriftDatabase(
   tables: [
     Pdfs,
+    PdfFileBlobs,
     LessonForks,
     Flashcards,
     StudyPlans,
@@ -320,35 +391,69 @@ class ContentLessonStates extends Table {
   ],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase([QueryExecutor? executor]) : super(executor ?? driftDatabase(name: 'nexus_study_database'));
+  AppDatabase([QueryExecutor? executor])
+    : super(
+        executor ??
+            driftDatabase(
+              name: 'nexus_study_database',
+              web: DriftWebOptions(
+                sqlite3Wasm: Uri.parse('sqlite3.wasm'),
+                driftWorker: Uri.parse('drift_worker.js'),
+              ),
+            ),
+      );
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) async {
-          await m.createAll();
-          await customStatement('PRAGMA user_version = 16');
-        },
-        onUpgrade: (m, from, to) async {
-          await _runLegacyRoomMigrations(from, to);
-        },
-        beforeOpen: (details) async {
-          await customStatement('PRAGMA foreign_keys = ON');
-          await _createCompatibilityIndexes();
-        },
-      );
+    onCreate: (m) async {
+      await m.createAll();
+      await customStatement('PRAGMA user_version = 17');
+    },
+    onUpgrade: (m, from, to) async {
+      await _runLegacyRoomMigrations(from, to);
+    },
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON');
+      await _createCompatibilityIndexes();
+    },
+  );
 
-  Future<List<Pdf>> listPdfs() => (select(pdfs)..orderBy([(p) => OrderingTerm.desc(p.lastOpenedAt)])).get();
+  Future<List<Pdf>> listPdfs() =>
+      (select(pdfs)..orderBy([(p) => OrderingTerm.desc(p.lastOpenedAt)])).get();
 
-  Stream<List<Pdf>> watchPdfs() => (select(pdfs)..orderBy([(p) => OrderingTerm.desc(p.lastOpenedAt)])).watch();
+  Stream<List<Pdf>> watchPdfs() => (select(
+    pdfs,
+  )..orderBy([(p) => OrderingTerm.desc(p.lastOpenedAt)])).watch();
 
   Stream<List<CourseCacheData>> watchReadyCourses() {
     return (select(courseCache)
           ..where((course) => course.isReady.equals(true))
           ..orderBy([(course) => OrderingTerm.asc(course.sortOrder)]))
         .watch();
+  }
+
+  Future<void> savePdfFileBlob({
+    required int pdfId,
+    required String fileName,
+    required Uint8List bytes,
+  }) async {
+    await into(pdfFileBlobs).insertOnConflictUpdate(
+      PdfFileBlobsCompanion.insert(
+        pdfId: Value(pdfId),
+        fileName: fileName,
+        bytes: bytes,
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      ),
+    );
+  }
+
+  Future<PdfFileBlob?> getPdfFileBlob(int pdfId) {
+    return (select(
+      pdfFileBlobs,
+    )..where((blob) => blob.pdfId.equals(pdfId))).getSingleOrNull();
   }
 
   Stream<List<Flashcard>> watchDueFlashcards([int? now]) {
@@ -359,64 +464,342 @@ class AppDatabase extends _$AppDatabase {
         .watch();
   }
 
+  Stream<List<Bookmark>> watchBookmarksForPdf(int pdfId) {
+    return (select(bookmarks)
+          ..where((bookmark) => bookmark.pdfId.equals(pdfId))
+          ..orderBy([(bookmark) => OrderingTerm.asc(bookmark.pageNumber)]))
+        .watch();
+  }
+
+  Future<void> toggleBookmark({
+    required int pdfId,
+    required int pageNumber,
+    required String title,
+    String? colorHex,
+  }) async {
+    final existing =
+        await (select(bookmarks)..where(
+              (bookmark) =>
+                  bookmark.pdfId.equals(pdfId) &
+                  bookmark.pageNumber.equals(pageNumber),
+            ))
+            .getSingleOrNull();
+    if (existing != null) {
+      await (delete(
+        bookmarks,
+      )..where((bookmark) => bookmark.id.equals(existing.id))).go();
+      return;
+    }
+    await into(bookmarks).insert(
+      BookmarksCompanion.insert(
+        pdfId: pdfId,
+        pageNumber: pageNumber,
+        title: title,
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        colorHex: colorHex == null ? const Value.absent() : Value(colorHex),
+      ),
+    );
+  }
+
+  Stream<List<SmartNote>> watchSmartNotesForPdfPage({
+    required int pdfId,
+    required int pageNumber,
+  }) {
+    return (select(smartNotes)
+          ..where(
+            (note) =>
+                note.pdfId.equals(pdfId) & note.pageNumber.equals(pageNumber),
+          )
+          ..orderBy([(note) => OrderingTerm.asc(note.term)]))
+        .watch();
+  }
+
+  Future<void> addSmartNote({
+    required int pdfId,
+    required int pageNumber,
+    required String term,
+    required String explanation,
+    String? colorHex,
+  }) async {
+    await into(smartNotes).insert(
+      SmartNotesCompanion.insert(
+        pdfId: pdfId,
+        pageNumber: pageNumber,
+        term: term,
+        explanation: explanation,
+        colorHex: colorHex == null ? const Value.absent() : Value(colorHex),
+      ),
+    );
+  }
+
+  Future<void> refreshAchievements() async {
+    await ensureAchievementCatalog();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final pdfCount = await _readScalarInt('SELECT COUNT(*) AS value FROM pdfs');
+    final minutes = await _readScalarInt(
+      'SELECT COALESCE(SUM(minutesStudied), 0) AS value FROM study_activity',
+    );
+    final pages = await _readScalarInt(
+      'SELECT COALESCE(SUM(pagesRead), 0) AS value FROM study_activity',
+    );
+    final cards = await _readScalarInt(
+      'SELECT COALESCE(SUM(cardsReviewed), 0) AS value FROM study_activity',
+    );
+    final completedPlans = await _readScalarInt(
+      'SELECT COUNT(*) AS value FROM study_plans WHERE completed = 1',
+    );
+    final activeDays = await _readScalarInt(
+      'SELECT COUNT(*) AS value FROM study_activity WHERE minutesStudied > 0 OR pagesRead > 0 OR cardsReviewed > 0',
+    );
+
+    await _unlockAchievement('first_pdf', pdfCount >= 1, now);
+    await _unlockAchievement('first_review', cards >= 1, now);
+    await _unlockAchievement('focused_hour', minutes >= 60, now);
+    await _unlockAchievement('page_sprinter', pages >= 25, now);
+    await _unlockAchievement('planner_finisher', completedPlans >= 1, now);
+    await _unlockAchievement('first_pomodoro', minutes >= 25, now);
+    await _unlockAchievement('recall_stack', cards >= 50, now);
+    await _unlockAchievement('weekly_rhythm', activeDays >= 7, now);
+  }
+
+  Future<void> ensureAchievementCatalog() async {
+    for (final seed in _achievementSeeds) {
+      await customStatement(
+        'INSERT INTO achievements (id, title, description, unlockedAt) VALUES (?, ?, ?, NULL) '
+        'ON CONFLICT(id) DO UPDATE SET title = excluded.title, description = excluded.description',
+        [seed.id, seed.title, seed.description],
+      );
+    }
+  }
+
+  Future<void> updateFlashcardReview({
+    required int id,
+    required int intervalDays,
+    required double easeFactor,
+    required int nextReviewAt,
+    required int successiveCorrect,
+    required int wrongCount,
+  }) async {
+    await transaction(() async {
+      await (update(flashcards)..where((card) => card.id.equals(id))).write(
+        FlashcardsCompanion(
+          intervalDays: Value(intervalDays),
+          easeFactor: Value(easeFactor),
+          nextReviewAt: Value(nextReviewAt),
+          successiveCorrect: Value(successiveCorrect),
+          wrongCount: Value(wrongCount),
+        ),
+      );
+      await _writeStudyActivityDelta(cardsReviewed: 1);
+    });
+    await refreshAchievements();
+  }
+
+  Future<void> recordStudyActivity({
+    int minutesStudied = 0,
+    int pagesRead = 0,
+    int cardsReviewed = 0,
+    DateTime? date,
+  }) async {
+    if (minutesStudied == 0 && pagesRead == 0 && cardsReviewed == 0) return;
+    await transaction(
+      () => _writeStudyActivityDelta(
+        minutesStudied: minutesStudied,
+        pagesRead: pagesRead,
+        cardsReviewed: cardsReviewed,
+        date: date,
+      ),
+    );
+    await refreshAchievements();
+  }
+
+  Future<void> _writeStudyActivityDelta({
+    int minutesStudied = 0,
+    int pagesRead = 0,
+    int cardsReviewed = 0,
+    DateTime? date,
+  }) async {
+    final key = _activityDateKey(date ?? DateTime.now());
+    final existing = await (select(
+      studyActivity,
+    )..where((row) => row.date.equals(key))).getSingleOrNull();
+    await into(studyActivity).insertOnConflictUpdate(
+      StudyActivityCompanion.insert(
+        date: key,
+        minutesStudied: Value((existing?.minutesStudied ?? 0) + minutesStudied),
+        pagesRead: Value((existing?.pagesRead ?? 0) + pagesRead),
+        cardsReviewed: Value((existing?.cardsReviewed ?? 0) + cardsReviewed),
+      ),
+    );
+  }
+
+  String _activityDateKey(DateTime date) {
+    final local = date.toLocal();
+    final year = local.year.toString().padLeft(4, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final day = local.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+
+  Future<int> _readScalarInt(String sql) async {
+    final row = await customSelect(sql).getSingle();
+    final value = row.data['value'];
+    return switch (value) {
+      int v => v,
+      num v => v.toInt(),
+      String v => int.tryParse(v) ?? 0,
+      _ => 0,
+    };
+  }
+
+  Future<void> _unlockAchievement(
+    String id,
+    bool unlocked,
+    int timestamp,
+  ) async {
+    if (!unlocked) return;
+    await customStatement(
+      'UPDATE achievements SET unlockedAt = ? WHERE id = ? AND unlockedAt IS NULL',
+      [timestamp, id],
+    );
+  }
+
   Future<void> _runLegacyRoomMigrations(int from, int to) async {
     Future<void> exec(String sql) => customStatement(sql);
     if (from < 2 && to >= 2) {
-      await exec("CREATE TABLE IF NOT EXISTS tts_cache (textHash TEXT NOT NULL PRIMARY KEY, text TEXT NOT NULL, audioBase64 TEXT NOT NULL, createdAt INTEGER NOT NULL)");
+      await exec(
+        "CREATE TABLE IF NOT EXISTS tts_cache (textHash TEXT NOT NULL PRIMARY KEY, text TEXT NOT NULL, audioBase64 TEXT NOT NULL, createdAt INTEGER NOT NULL)",
+      );
     }
-    if (from < 3 && to >= 3) await _addColumnIfMissing('pdfs', 'progression', 'INTEGER NOT NULL DEFAULT 0');
+    if (from < 3 && to >= 3) {
+      await _addColumnIfMissing(
+        'pdfs',
+        'progression',
+        'INTEGER NOT NULL DEFAULT 0',
+      );
+    }
     if (from < 4 && to >= 4) {
-      await _addColumnIfMissing('smart_notes', 'x', 'REAL NOT NULL DEFAULT 0.0');
-      await _addColumnIfMissing('smart_notes', 'y', 'REAL NOT NULL DEFAULT 0.0');
+      await _addColumnIfMissing(
+        'smart_notes',
+        'x',
+        'REAL NOT NULL DEFAULT 0.0',
+      );
+      await _addColumnIfMissing(
+        'smart_notes',
+        'y',
+        'REAL NOT NULL DEFAULT 0.0',
+      );
       await _addColumnIfMissing('smart_notes', 'colorHex', 'TEXT');
     }
     if (from < 5 && to >= 5) {
-      await exec("CREATE TABLE IF NOT EXISTS study_activity (date TEXT NOT NULL PRIMARY KEY, minutesStudied INTEGER NOT NULL DEFAULT 0, pagesRead INTEGER NOT NULL DEFAULT 0, cardsReviewed INTEGER NOT NULL DEFAULT 0)");
+      await exec(
+        "CREATE TABLE IF NOT EXISTS study_activity (date TEXT NOT NULL PRIMARY KEY, minutesStudied INTEGER NOT NULL DEFAULT 0, pagesRead INTEGER NOT NULL DEFAULT 0, cardsReviewed INTEGER NOT NULL DEFAULT 0)",
+      );
     }
-    if (from < 6 && to >= 6) await _addColumnIfMissing('study_plans', 'source', "TEXT NOT NULL DEFAULT 'AI'");
-    if (from < 7 && to >= 7) await _addColumnIfMissing('pdfs', 'thumbnailPath', 'TEXT');
+    if (from < 6 && to >= 6) {
+      await _addColumnIfMissing(
+        'study_plans',
+        'source',
+        "TEXT NOT NULL DEFAULT 'AI'",
+      );
+    }
+    if (from < 7 && to >= 7) {
+      await _addColumnIfMissing('pdfs', 'thumbnailPath', 'TEXT');
+    }
     if (from < 8 && to >= 8) {
-      await exec('CREATE TABLE IF NOT EXISTS bookmarks (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, pdfId INTEGER NOT NULL, pageNumber INTEGER NOT NULL, title TEXT NOT NULL, createdAt INTEGER NOT NULL, colorHex TEXT)');
-      await exec('CREATE TABLE IF NOT EXISTS annotations (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, pdfId INTEGER NOT NULL, pageNumber INTEGER NOT NULL, pathDataJson TEXT NOT NULL, colorHex TEXT NOT NULL, strokeWidth REAL NOT NULL, createdAt INTEGER NOT NULL)');
-      await exec('CREATE TABLE IF NOT EXISTS tags (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, colorHex TEXT NOT NULL)');
-      await exec('CREATE TABLE IF NOT EXISTS pdf_tag_cross_ref (pdfId INTEGER NOT NULL, tagId INTEGER NOT NULL, PRIMARY KEY(pdfId, tagId))');
-      await exec('CREATE TABLE IF NOT EXISTS achievements (id TEXT NOT NULL PRIMARY KEY, title TEXT NOT NULL, description TEXT NOT NULL, unlockedAt INTEGER)');
-      await exec('CREATE TABLE IF NOT EXISTS ai_jobs (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, type TEXT NOT NULL, payloadJson TEXT NOT NULL, status TEXT NOT NULL, retries INTEGER NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)');
+      await exec(
+        'CREATE TABLE IF NOT EXISTS bookmarks (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, pdfId INTEGER NOT NULL, pageNumber INTEGER NOT NULL, title TEXT NOT NULL, createdAt INTEGER NOT NULL, colorHex TEXT)',
+      );
+      await exec(
+        'CREATE TABLE IF NOT EXISTS annotations (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, pdfId INTEGER NOT NULL, pageNumber INTEGER NOT NULL, pathDataJson TEXT NOT NULL, colorHex TEXT NOT NULL, strokeWidth REAL NOT NULL, createdAt INTEGER NOT NULL)',
+      );
+      await exec(
+        'CREATE TABLE IF NOT EXISTS tags (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, colorHex TEXT NOT NULL)',
+      );
+      await exec(
+        'CREATE TABLE IF NOT EXISTS pdf_tag_cross_ref (pdfId INTEGER NOT NULL, tagId INTEGER NOT NULL, PRIMARY KEY(pdfId, tagId))',
+      );
+      await exec(
+        'CREATE TABLE IF NOT EXISTS achievements (id TEXT NOT NULL PRIMARY KEY, title TEXT NOT NULL, description TEXT NOT NULL, unlockedAt INTEGER)',
+      );
+      await exec(
+        'CREATE TABLE IF NOT EXISTS ai_jobs (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, type TEXT NOT NULL, payloadJson TEXT NOT NULL, status TEXT NOT NULL, retries INTEGER NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)',
+      );
     }
-    if (from < 9 && to >= 9) await _addColumnIfMissing('smart_notes', 'pinned', 'INTEGER NOT NULL DEFAULT 0');
+    if (from < 9 && to >= 9) {
+      await _addColumnIfMissing(
+        'smart_notes',
+        'pinned',
+        'INTEGER NOT NULL DEFAULT 0',
+      );
+    }
     if (from < 10 && to >= 10) {
-      await exec('CREATE TABLE IF NOT EXISTS course_cache (id TEXT NOT NULL PRIMARY KEY, title TEXT NOT NULL, titleEn TEXT NOT NULL, color TEXT NOT NULL, icon TEXT, mode TEXT NOT NULL, root TEXT, sortOrder INTEGER NOT NULL, isReady INTEGER NOT NULL, chapterCount INTEGER NOT NULL, lessonCount INTEGER NOT NULL, structureJson TEXT NOT NULL, chaptersJson TEXT NOT NULL, contentHash TEXT, cachedAt INTEGER NOT NULL)');
-      await exec('CREATE TABLE IF NOT EXISTS lesson_cache (chapterId TEXT NOT NULL, mode TEXT NOT NULL, courseId TEXT, title TEXT, contentJson TEXT NOT NULL, contentHash TEXT, cachedAt INTEGER NOT NULL, PRIMARY KEY(chapterId, mode))');
+      await exec(
+        'CREATE TABLE IF NOT EXISTS course_cache (id TEXT NOT NULL PRIMARY KEY, title TEXT NOT NULL, titleEn TEXT NOT NULL, color TEXT NOT NULL, icon TEXT, mode TEXT NOT NULL, root TEXT, sortOrder INTEGER NOT NULL, isReady INTEGER NOT NULL, chapterCount INTEGER NOT NULL, lessonCount INTEGER NOT NULL, structureJson TEXT NOT NULL, chaptersJson TEXT NOT NULL, contentHash TEXT, cachedAt INTEGER NOT NULL)',
+      );
+      await exec(
+        'CREATE TABLE IF NOT EXISTS lesson_cache (chapterId TEXT NOT NULL, mode TEXT NOT NULL, courseId TEXT, title TEXT, contentJson TEXT NOT NULL, contentHash TEXT, cachedAt INTEGER NOT NULL, PRIMARY KEY(chapterId, mode))',
+      );
     }
     if (from < 11 && to >= 11) {
-      await exec('CREATE TABLE IF NOT EXISTS content_reading_position (chapterId TEXT NOT NULL, mode TEXT NOT NULL, courseId TEXT NOT NULL, chapterTitle TEXT NOT NULL, sectionIndex INTEGER NOT NULL, updatedAt INTEGER NOT NULL, PRIMARY KEY(chapterId, mode))');
-      await exec('CREATE TABLE IF NOT EXISTS content_lesson_state (chapterId TEXT NOT NULL PRIMARY KEY, status TEXT, bookmarked INTEGER NOT NULL, updatedAt INTEGER NOT NULL)');
+      await exec(
+        'CREATE TABLE IF NOT EXISTS content_reading_position (chapterId TEXT NOT NULL, mode TEXT NOT NULL, courseId TEXT NOT NULL, chapterTitle TEXT NOT NULL, sectionIndex INTEGER NOT NULL, updatedAt INTEGER NOT NULL, PRIMARY KEY(chapterId, mode))',
+      );
+      await exec(
+        'CREATE TABLE IF NOT EXISTS content_lesson_state (chapterId TEXT NOT NULL PRIMARY KEY, status TEXT, bookmarked INTEGER NOT NULL, updatedAt INTEGER NOT NULL)',
+      );
     }
-    if (from < 12 && to >= 12) await _addColumnIfMissing('flashcards', 'sourceKey', 'TEXT');
-    if (from < 13 && to >= 13) await _addColumnIfMissing('pdfs', 'remoteId', 'TEXT');
+    if (from < 12 && to >= 12) {
+      await _addColumnIfMissing('flashcards', 'sourceKey', 'TEXT');
+    }
+    if (from < 13 && to >= 13) {
+      await _addColumnIfMissing('pdfs', 'remoteId', 'TEXT');
+    }
     if (from < 14 && to >= 14) {
-      await exec('CREATE TABLE IF NOT EXISTS lesson_annotations (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, chapterId TEXT NOT NULL, mode TEXT NOT NULL, pathDataJson TEXT NOT NULL, colorHex TEXT NOT NULL, strokeWidth REAL NOT NULL, createdAt INTEGER NOT NULL)');
+      await exec(
+        'CREATE TABLE IF NOT EXISTS lesson_annotations (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, chapterId TEXT NOT NULL, mode TEXT NOT NULL, pathDataJson TEXT NOT NULL, colorHex TEXT NOT NULL, strokeWidth REAL NOT NULL, createdAt INTEGER NOT NULL)',
+      );
     }
     if (from < 15 && to >= 15) {
-      await _addColumnIfMissing('study_plans', 'sourceType', "TEXT NOT NULL DEFAULT 'PDF'");
+      await _addColumnIfMissing(
+        'study_plans',
+        'sourceType',
+        "TEXT NOT NULL DEFAULT 'PDF'",
+      );
       await _addColumnIfMissing('study_plans', 'chapterId', 'TEXT');
       await _addColumnIfMissing('study_plans', 'mode', 'TEXT');
       await _addColumnIfMissing('study_plans', 'courseId', 'TEXT');
     }
     if (from < 16 && to >= 16) {
-      await exec('CREATE TABLE IF NOT EXISTS lesson_forks (id TEXT NOT NULL PRIMARY KEY, pdfId INTEGER NOT NULL, pdfRemoteId TEXT, preset TEXT NOT NULL, title TEXT NOT NULL, scopeType TEXT NOT NULL, scopeLabel TEXT NOT NULL, startPage INTEGER, endPage INTEGER, contentJson TEXT NOT NULL, status TEXT NOT NULL, progress REAL NOT NULL, model TEXT NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)');
+      await exec(
+        'CREATE TABLE IF NOT EXISTS lesson_forks (id TEXT NOT NULL PRIMARY KEY, pdfId INTEGER NOT NULL, pdfRemoteId TEXT, preset TEXT NOT NULL, title TEXT NOT NULL, scopeType TEXT NOT NULL, scopeLabel TEXT NOT NULL, startPage INTEGER, endPage INTEGER, contentJson TEXT NOT NULL, status TEXT NOT NULL, progress REAL NOT NULL, model TEXT NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)',
+      );
+    }
+    if (from < 17 && to >= 17) {
+      await exec(
+        'CREATE TABLE IF NOT EXISTS pdf_file_blobs (pdfId INTEGER NOT NULL PRIMARY KEY, fileName TEXT NOT NULL, bytes BLOB NOT NULL, updatedAt INTEGER NOT NULL)',
+      );
     }
   }
 
-  Future<void> _addColumnIfMissing(String table, String column, String definition) async {
+  Future<void> _addColumnIfMissing(
+    String table,
+    String column,
+    String definition,
+  ) async {
     final existing = await customSelect('PRAGMA table_info($table)').get();
     final hasColumn = existing.any((row) => row.data['name'] == column);
-    if (!hasColumn) await customStatement('ALTER TABLE $table ADD COLUMN $column $definition');
+    if (!hasColumn) {
+      await customStatement(
+        'ALTER TABLE $table ADD COLUMN $column $definition',
+      );
+    }
   }
 
   Future<void> _createCompatibilityIndexes() async {
     final statements = [
       'CREATE INDEX IF NOT EXISTS index_pdfs_title ON pdfs(title)',
+      'CREATE INDEX IF NOT EXISTS index_pdf_file_blobs_updatedAt ON pdf_file_blobs(updatedAt)',
       'CREATE INDEX IF NOT EXISTS index_flashcards_pdfId ON flashcards(pdfId)',
       'CREATE INDEX IF NOT EXISTS index_flashcards_nextReviewAt ON flashcards(nextReviewAt)',
       'CREATE INDEX IF NOT EXISTS index_study_plans_pdfId ON study_plans(pdfId)',
