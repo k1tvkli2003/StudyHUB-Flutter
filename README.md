@@ -1,17 +1,41 @@
-# studyhub
+# StudyHUB-Flutter
 
-A new Flutter project.
+Local-first AI study planner and interactive PDF library for mobile and
+desktop. Companion Flutter client to the StudyHUB web platform: PDF reading
+with annotation, study planning, review flows, pomodoro, dashboard/stats, and
+Supabase-backed sync.
 
-## Getting Started
+## What's inside
 
-This project is a starting point for a Flutter application.
+- `lib/features/` — planner, lesson_reader, pdf_reader, library, dashboard,
+  review, stats, explore, mindmap, pomodoro, onboarding, security, settings,
+  shell/shared.
+- `lib/` platform core — `app/` (app widget, go_router routing), `core/`
+  (config, notifications, platform, widgets), `data/`, `design_system/`,
+  `sync/`.
+- `test/` — model/database-workflow/web-manifest tests; `tool/`,
+  `scripts/` helpers; `codemagic.yaml` — CI (analyze + test workflow,
+  Android release lane); `vercel.json`, `web/` for the web build.
+- Key packages: Riverpod, go_router, drift + sqlite3_flutter_libs,
+  supabase_flutter, pdfrx, flutter_markdown, flutter_math_fork,
+  flutter_local_notifications, local_auth, home_widget, camera plus
+  google_mlkit_text_recognition (OCR), permission_handler, file_selector.
 
-A few resources to get you started if this is your first Flutter project:
+## Tech stack
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Flutter 3.12+ (Dart), drift/SQLite local store, Supabase sync, Codemagic CI.
+Version `1.0.0+1`, private package (`publish_to: none`).
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Getting started
+
+Standard Flutter flow: `flutter pub get`,
+`dart run build_runner build --delete-conflicting-outputs`, `flutter
+analyze`, `flutter test`; Android release lane for device builds (see
+`codemagic.yaml`). No checked-in environment file, so Supabase URL/keys
+are supplied at build/run time per the web project's `.env.example` pattern.
+
+## Status
+
+Early client under construction — feature surface is broad (15 feature
+modules) at version 1.0.0+1; treat depth per feature as unverified until
+exercised on device.
